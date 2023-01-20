@@ -81,6 +81,17 @@ func (i *FullInfo) GetOrderByIdWithProduct(id int, db *sql.DB) *FullInfo {
 	return i
 }
 
+func (i *FullInfo) GetAllUsedDataByProdID(id int, db *sql.DB) *FullInfo {
+	sqlString := fmt.Sprintf(
+		"SELECT T1.name, T1.price, T1.box_name, T2.client_name, T2.phone FROM (SELECT p.ID_product, p.name, p.price, b.name AS box_name FROM products p JOIN `box-products` bp ON p.ID_product = bp.ID_products JOIN box b ON bp.ID_box = b.ID_box) T1,(SELECT p.ID_product, o.client_name, o.phone FROM orders o JOIN `orders-products` op ON o.ID_order = op.ID_order JOIN products p ON op.ID_product = p.ID_product WHERE o.ID_order = '%d') T2 WHERE  T1.ID_product = T2.ID_product", id)
+	row := db.QueryRow(sqlString)
+	err := row.Scan(&i.prod.Name, &i.prod.Price, &i.box.Name, &i.order.ClientName, &i.order.Phone)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return i
+}
+
 func main() {
 	var inf FullInfo
 
@@ -89,12 +100,11 @@ func main() {
 		log.Fatal(err)
 	}
 
-	OrderIds := []int{1, 2}
+	OrderIds := []int{1, 2, 3}
 
 	for i := 1; i < len(OrderIds)+1; i++ {
 		fmt.Println(i)
-		inf.GetProductByIdWithBox(i, db)
-		inf.GetOrderByIdWithProduct(i, db)
+		inf.GetAllUsedDataByProdID(i, db)
 		fmt.Println(inf)
 	}
 
